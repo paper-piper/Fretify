@@ -49,14 +49,17 @@ function getGreeting() {
   return 'Late-night session,';
 }
 
-export default function DailySong() {
+export default function DailySong({ onSongPress }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const song = mockSongs[state.songIndex];
   const [isShuffling, setIsShuffling] = useState(false);
+  // Reveal animation plays once on the very first mount of the screen
+  const [isInitialReveal, setIsInitialReveal] = useState(true);
 
   const handleShuffle = useCallback(() => {
     if (isShuffling || state.shufflesLeft <= 0) return;
     setIsShuffling(true);
+    setIsInitialReveal(false); // subsequent songs use the slide animation
     dispatch({ type: 'SHUFFLE' });
     // Debounce: prevent double-tap during animation
     setTimeout(() => setIsShuffling(false), 500);
@@ -96,7 +99,12 @@ export default function DailySong() {
 
       {/* ── Song Card — flex-1, fills available space ── */}
       <div className="flex-1 min-h-0 px-4 pb-3">
-        <SongCard song={song} direction={state.direction} />
+        <SongCard
+          song={song}
+          direction={state.direction}
+          isReveal={isInitialReveal}
+          onPress={() => onSongPress?.(song)}
+        />
       </div>
 
       {/* ── Shuffle area ── */}
