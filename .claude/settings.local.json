@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python skills/ui-ux-pro-max/scripts/search.py \"music explore dark mood playlists spotify\" --design-system -p \"Fretify Explore\")",
+      "Bash(python3 skills/ui-ux-pro-max/scripts/search.py \"music explore dark mood playlists spotify\" --design-system -p \"Fretify Explore\")",
+      "Bash(npm run:*)",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:lrclib.net)",
+      "WebFetch(domain:open.spotify.com)",
+      "WebFetch(domain:developer.spotify.com)",
+      "Bash(node -e \"const d=require\\('./src/data/scraped_songs.json'\\); d.forEach\\(s=>console.log\\(s.id, s.song_title, s.spotify_track_id\\)\\)\")",
+      "Bash(npx vite:*)"
+    ]
+  }
+}
