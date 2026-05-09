@@ -81,17 +81,28 @@ function SongRow({ song, onPress, index, accentColor }) {
       whileTap={{ scale: 0.98 }}
       onClick={() => onPress(song)}
       className="w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      style={{ background: '#1E1B30', border: '1px solid rgba(255,255,255,0.07)' }}
+      style={{
+        background: song.isTopMatch ? `linear-gradient(135deg, ${accentColor}18, #1E1B30)` : '#1E1B30',
+        border: song.isTopMatch ? `1px solid ${accentColor}50` : '1px solid rgba(255,255,255,0.07)',
+      }}
     >
       <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden" style={{ background: `linear-gradient(135deg, ${song.albumArt.from}, ${song.albumArt.to})` }}>
         {song.albumArt.url300 && <img src={song.albumArt.url300} alt="" className="w-full h-full object-cover" loading="lazy" />}
       </div>
       <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          {song.isTopMatch && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md font-dm font-medium flex-shrink-0" style={{ fontSize: '0.58rem', background: `${accentColor}25`, color: accentColor, border: `1px solid ${accentColor}40` }}>
+              ★ Best match
+            </span>
+          )}
+        </div>
         <p className="font-dm font-medium text-ui-md text-text-primary truncate">{song.title}</p>
         <p className="font-dm text-ui-xs text-text-secondary mt-0.5 truncate">{song.artist}</p>
       </div>
-      <div className="flex-shrink-0 px-2 py-0.5 rounded-full" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}35` }}>
-        <span className="font-dm font-medium" style={{ fontSize: '0.65rem', color: accentColor }}>{song.readinessScore}%</span>
+      <div className="flex-shrink-0 flex flex-col items-center px-2 py-1 rounded-xl" style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}35`, minWidth: '2.8rem' }}>
+        <span className="font-dm font-bold leading-none" style={{ fontSize: '0.72rem', color: accentColor }}>{song.readinessScore}%</span>
+        <span className="font-dm leading-none mt-0.5" style={{ fontSize: '0.52rem', color: `${accentColor}90` }}>playable</span>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D3860" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <polyline points="9 18 15 12 9 6" />

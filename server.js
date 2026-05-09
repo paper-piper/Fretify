@@ -93,7 +93,7 @@ function popupHTML(token, error) {
 // Chrome DevTools probes this on any local server — return empty config to suppress the 404
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => res.json({}));
 
-// Combined endpoint: top tracks + audio features in one round-trip
+// Combined endpoint: top tracks + artist genres (audio-features deprecated Nov 2024)
 app.get('/api/mix-data', async (req, res) => {
   const token = req.headers['x-token'];
   if (!token) return res.status(401).json({ error: 'No token' });
@@ -101,46 +101,50 @@ app.get('/api/mix-data', async (req, res) => {
   try {
     const headers = { Authorization: `Bearer ${token}` };
 
-    const [topRes, recentResult] = await Promise.all([
+    const [topTracksRes, topArtistsRes] = await Promise.all([
       axios.get('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term', { headers }),
-      axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=50', { headers }).catch(() => null),
+      axios.get('https://api.spotify.com/v1/me/top/artists?limit=50&time_range=medium_term', { headers }),
     ]);
 
-    const topTracks = topRes.data.items;
-    const recentTracks = recentResult ? recentResult.data.items.map(i => i.track) : [];
+    const topTracks  = topTracksRes.data.items;
+    const topArtists = topArtistsRes.data.items;
 
-    // Deduplicate: top tracks first, then fill with recent ones not already included
-    const seen = new Set(topTracks.map(t => t.id));
-    const merged = [...topTracks];
-    for (const t of recentTracks) {
-      if (!seen.has(t.id)) { seen.add(t.id); merged.push(t); }
+    // Build genre map from top artists
+    const artistGenreMap = {};
+    for (const a of topArtists) artistGenreMap[a.id] = a.genres;
+
+    // Batch-fetch genres for track artists not already in the map
+    const missing = [...new Set(
+      topTracks.flatMap(t => t.artists.map(a => a.id)).filter(id => !artistGenreMap[id])
+    )].slice(0, 50);
+
+    if (missing.length) {
+      const artRes = await axios.get(
+        `https://api.spotify.com/v1/artists?ids=${missing.join(',')}`,
+        { headers }
+      );
+      for (const a of artRes.data.artists) {
+        if (a) artistGenreMap[a.id] = a.genres;
+      }
     }
 
-    // Fetch audio features in batches of 100
-    const ids = merged.map(t => t.id).join(',');
-    const featuresRes = await axios.get(
-      `https://api.spotify.com/v1/audio-features?ids=${ids}`,
-      { headers }
-    );
+    const topArtistIds = new Set(topArtists.map(a => a.id));
 
-    const featuresMap = {};
-    for (const f of featuresRes.data.audio_features) {
-      if (f) featuresMap[f.id] = f;
-    }
-
-    const tracks = merged.map(t => ({
-      id: t.id,
-      name: t.name,
-      artist: t.artists[0]?.name ?? '',
-      album: t.album?.name ?? '',
-      art300: t.album?.images?.[1]?.url ?? t.album?.images?.[0]?.url ?? null,
-      art640: t.album?.images?.[0]?.url ?? null,
-      popularity: t.popularity,
-      features: featuresMap[t.id] ?? null,
+    const tracks = topTracks.map(t => ({
+      id:              t.id,
+      name:            t.name,
+      artist:          t.artists[0]?.name ?? '',
+      album:           t.album?.name ?? '',
+      art300:          t.album?.images?.[1]?.url ?? t.album?.images?.[0]?.url ?? null,
+      art640:          t.album?.images?.[0]?.url ?? null,
+      popularity:      t.popularity,
+      isFavoriteArtist: t.artists.some(a => topArtistIds.has(a.id)),
+      genres:          [...new Set(t.artists.flatMap(a => artistGenreMap[a.id] ?? []))],
     }));
 
     res.json({ tracks });
   } catch (err) {
+    console.error('mix-data error:', err.response?.data || err.message);
     const status = err.response?.status || 500;
     res.status(status).json(err.response?.data || { error: 'Spotify API error' });
   }

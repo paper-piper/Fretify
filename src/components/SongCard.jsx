@@ -93,7 +93,7 @@ function TagPill({ tag, label }) {
   );
 }
 
-export default function SongCard({ song, direction = 1, isReveal = false, onPress }) {
+export default function SongCard({ song, direction = 1, isReveal = false, onPress, onEnterPress }) {
   const prefersReducedMotion = useReducedMotion();
   const [artLoaded, setArtLoaded] = useState(false);
   if (!song) return null;
@@ -287,6 +287,22 @@ export default function SongCard({ song, direction = 1, isReveal = false, onPres
             </svg>
             <p className="font-dm text-ui-xs text-text-secondary">{song.whyThis}</p>
           </motion.div>
+
+          {onEnterPress && (
+            <motion.div variants={contentItemVariants} className="mt-3">
+              <button
+                onClick={(e) => { e.stopPropagation(); onEnterPress(); }}
+                className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 font-dm font-medium text-ui-sm cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-opacity duration-150 active:opacity-80"
+                style={{ background: 'rgba(107,92,231,0.92)', color: 'white', border: '1px solid rgba(107,92,231,0.5)' }}
+                aria-label={`Start playing ${song.title}`}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Start Playing
+              </button>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Subtle border */}

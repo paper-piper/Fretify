@@ -477,7 +477,6 @@ export default function TabView({ song, onClose }) {
   const scrollRef = useRef(null);
   if (!song) return null;
 
-  if (song.isSpotifyOnly) return <SpotifyOnlyView song={song} onClose={onClose} />;
 
   const sections = useMemo(() => parseTabContent(song.tabContent), [song.tabContent]);
 
@@ -624,11 +623,69 @@ export default function TabView({ song, onClose }) {
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {sections.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3D3860" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
-            </svg>
-            <p className="font-dm text-ui-sm text-text-tertiary">Tab content not available</p>
+          <div className="pt-4 space-y-5">
+            {/* Readiness + why */}
+            {song.whyThis && (
+              <div className="flex items-center gap-2 px-1">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="flex-shrink-0">
+                  <circle cx="7" cy="7" r="6" stroke="#6B5CE7" strokeWidth="1.2" fill="none" />
+                  <circle cx="7" cy="7" r="2" fill="#EF9F27" />
+                </svg>
+                <p className="font-dm text-ui-xs text-text-secondary">{song.whyThis}</p>
+              </div>
+            )}
+
+            {/* Key chords */}
+            {song.chords?.length > 0 && (
+              <div>
+                <p className="font-syne font-bold text-text-secondary uppercase mb-3 px-1" style={{ fontSize: '0.7rem', letterSpacing: '0.08em' }}>
+                  Key Chords
+                </p>
+                <div className="flex flex-wrap gap-2 px-1">
+                  {song.chords.map(chord => (
+                    <div
+                      key={chord.name}
+                      className="px-3 py-2 rounded-xl font-dm font-medium text-ui-sm"
+                      style={{
+                        background: chord.known ? 'rgba(107,92,231,0.2)' : 'rgba(255,255,255,0.05)',
+                        border: chord.known ? '1px solid rgba(107,92,231,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                        color: chord.known ? '#C4B5FD' : '#8B84B0',
+                      }}
+                    >
+                      {chord.name}
+                    </div>
+                  ))}
+                </div>
+                <p className="font-dm text-[11px] text-text-tertiary mt-2 px-1">Purple = chords you already know</p>
+              </div>
+            )}
+
+            {/* UG link or fallback */}
+            {song.tab_url ? (
+              <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: '#1E1B30', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="font-dm text-ui-sm text-text-secondary">Find the full tab on Ultimate Guitar</p>
+                <a
+                  href={song.tab_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-11 rounded-xl font-dm font-medium text-ui-sm flex items-center justify-center gap-2 cursor-pointer"
+                  style={{ background: '#6B5CE7', color: '#fff' }}
+                >
+                  Open on Ultimate Guitar
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </a>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3D3860" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21" />
+                </svg>
+                <p className="font-dm text-ui-sm text-text-tertiary">Tab content not available</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="pt-2">
