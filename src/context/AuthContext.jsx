@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const connectSpotify = () => updateUser({ spotifyConnected: true });
+  const connectSpotify = (token) => updateUser({ spotifyConnected: true, spotifyToken: token ?? null });
 
   const signOut = () => {
     localStorage.removeItem(STORAGE_KEY);

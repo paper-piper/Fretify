@@ -9,7 +9,7 @@
  * recommend the right songs right away. Results are stored in AuthContext.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FretlyLogo from '../components/FretlyLogo';
 import { useAuth } from '../context/AuthContext';
@@ -309,13 +309,46 @@ function SignInStep({ onBack, onContinue }) {
 
 function SpotifyStep({ onContinue, onSkip }) {
   const { connectSpotify } = useAuth();
-  const [state, setState] = useState('idle'); // idle | connecting | done
+  const [state, setState] = useState('idle'); // idle | connecting | done | error
 
-  const connect = async () => {
+  const connect = () => {
     setState('connecting');
-    await new Promise(r => setTimeout(r, 2200));
-    connectSpotify();
-    setState('done');
+    const popup = window.open(
+      'http://127.0.0.1:8888/login',
+      'spotify-auth',
+      'width=500,height=700,left=200,top=100'
+    );
+
+    let resolved = false;
+
+    const handleMessage = (event) => {
+      if (!event.data) return;
+      if (event.data.spotifyToken) {
+        resolved = true;
+        clearInterval(pollClosed);
+        window.removeEventListener('message', handleMessage);
+        connectSpotify(event.data.spotifyToken);
+        setState('done');
+        popup?.close();
+      } else if (event.data.spotifyError) {
+        resolved = true;
+        clearInterval(pollClosed);
+        window.removeEventListener('message', handleMessage);
+        setState('error');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    const pollClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(pollClosed);
+        if (!resolved) {
+          window.removeEventListener('message', handleMessage);
+          setState('idle');
+        }
+      }
+    }, 500);
   };
 
   return (
@@ -370,8 +403,21 @@ function SpotifyStep({ onContinue, onSkip }) {
             <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1ED760" strokeWidth="2.5" strokeLinecap="round">
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            <span className="font-dm text-ui-sm" style={{ color: '#1ED760' }}>Connecting…</span>
+            <span className="font-dm text-ui-sm" style={{ color: '#1ED760' }}>Waiting for Spotify…</span>
           </div>
+        )}
+        {state === 'error' && (
+          <>
+            <p className="font-dm text-ui-xs text-center" style={{ color: '#FF4466' }}>Connection failed. Please try again.</p>
+            <button
+              onClick={() => setState('idle')}
+              className="w-full h-12 rounded-2xl font-dm font-medium text-ui-sm cursor-pointer focus:outline-none"
+              style={{ background: '#1ED760', color: '#000' }}
+            >
+              Try again
+            </button>
+            <GhostBtn onClick={onSkip}>Skip for now</GhostBtn>
+          </>
         )}
         {state === 'done' && (
           <PrimaryBtn onClick={onContinue}>Continue →</PrimaryBtn>
@@ -530,6 +576,7 @@ export default function AuthFlow({ onComplete }) {
   const [signUpData, setSignUpData]   = useState(null);
   const [quizIndex, setQuizIndex]     = useState(0);
   const [quizAnswers, setQuizAnswers] = useState({});
+  const quizAnswersRef = useRef({});
   const [completedUser, setCompletedUser] = useState(null);
 
   const handleSignUp = (data) => {
@@ -542,21 +589,18 @@ export default function AuthFlow({ onComplete }) {
   const handleSpotifySkip = () => setScreen('quiz');
 
   const handleAnswer = (id, value) => {
-    setQuizAnswers(prev => ({ ...prev, [id]: value }));
+    const updated = { ...quizAnswersRef.current, [id]: value };
+    quizAnswersRef.current = updated;
+    setQuizAnswers(updated);
   };
 
   const handleQuizNext = () => {
     if (quizIndex < QUIZ.length - 1) {
       setQuizIndex(i => i + 1);
     } else {
-      // Use functional updater to read the latest answers even when answer + next
-      // are triggered in the same React batch (e.g. programmatic or rapid taps).
-      setQuizAnswers(latestAnswers => {
-        const user = completeQuiz(latestAnswers);
-        setCompletedUser(user);
-        setScreen('done');
-        return latestAnswers;
-      });
+      const user = completeQuiz(quizAnswersRef.current);
+      setCompletedUser(user);
+      setScreen('done');
     }
   };
 
